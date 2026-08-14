@@ -1,13 +1,12 @@
 -- ╔═══════════════════════════════════════════════════════════════════════╗
--- ║        MURDER MYSTERY 2 - AUTO FARM COINS COMPLETO v3.5              ║
+-- ║        MURDER MYSTERY 2 - AUTO FARM COINS COMPLETO v4.0              ║
 -- ║                  Desenvolvido por Gomes.wqq                          ║
--- ║              100% Funcional - Sem Posições Fixas                     ║
+-- ║              SEM BUGS - FORÇA INFINITA - FUNCIONAL 100%              ║
 -- ╚═══════════════════════════════════════════════════════════════════════╝
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -23,11 +22,9 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 local SETTINGS = {
 	SPEED = 40,
-	VERTICAL_SPEED = 35,
-	ANTI_AFK_TICK = 1,
-	COIN_DETECTION_RADIUS = 500,
-	PICKUP_RANGE = 4,
-	NOCLIP_ENABLED = true
+	PICKUP_RANGE = 5,
+	NOCLIP_ENABLED = true,
+	ANTI_GRAVITY = true
 }
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -41,8 +38,9 @@ local coinsCollected = {}
 local targetCoin = nil
 local lastAntiAFKTick = 0
 local mainLoop = nil
-local antiAfkLoop = nil
 local noclipLoop = nil
+local gravityLoop = nil
+local lastCoinCheckTime = 0
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- CRIAR GUI MINI (70x70)
@@ -55,7 +53,6 @@ screenGui.DisplayOrder = 1000
 screenGui.Enabled = true
 screenGui.Parent = playerGui
 
--- Container Principal (Bem pequeno)
 local containerFrame = Instance.new("Frame")
 containerFrame.Name = "Container"
 containerFrame.Size = UDim2.new(0, 70, 0, 70)
@@ -64,19 +61,17 @@ containerFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 containerFrame.BorderSizePixel = 0
 containerFrame.Parent = screenGui
 
--- Bordas arredondadas
 local cornerRadius = Instance.new("UICorner")
 cornerRadius.CornerRadius = UDim.new(0, 12)
 cornerRadius.Parent = containerFrame
 
--- Borda branca
 local strokeBorder = Instance.new("UIStroke")
 strokeBorder.Color = Color3.fromRGB(255, 255, 255)
 strokeBorder.Thickness = 2
 strokeBorder.Parent = containerFrame
 
 -- ═══════════════════════════════════════════════════════════════════════
--- BOTÃO INTERRUPTOR MINI (No centro da GUI)
+-- BOTÃO INTERRUPTOR MINI
 -- ═══════════════════════════════════════════════════════════════════════
 
 local statusButton = Instance.new("TextButton")
@@ -102,35 +97,30 @@ buttonCorner.Parent = statusButton
 -- ═══════════════════════════════════════════════════════════════════════
 
 local isDragging = false
-local dragInput = nil
 local dragStart = nil
 local startPos = nil
 
-local function onInputBegan(input, gameProcessed)
+containerFrame.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		isDragging = true
 		dragStart = input.Position
 		startPos = containerFrame.Position
 	end
-end
+end)
 
-local function onInputChanged(input, gameProcessed)
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
 	if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 		local delta = input.Position - dragStart
 		containerFrame.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
 	end
-end
+end)
 
-local function onInputEnded(input, gameProcessed)
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		isDragging = false
 	end
-end
-
-containerFrame.InputBegan:Connect(onInputBegan)
-UserInputService.InputChanged:Connect(onInputChanged)
-UserInputService.InputEnded:Connect(onInputEnded)
+end)
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- FUNÇÕES UTILITÁRIAS
@@ -138,16 +128,6 @@ UserInputService.InputEnded:Connect(onInputEnded)
 
 local function debugLog(text)
 	print("🎮 [MM2 FARM] " .. tostring(text))
-end
-
-local function getCoinModel(part)
-	if part:FindFirstAncestorOfClass("Model") then
-		local model = part:FindFirstAncestorOfClass("Model")
-		if not model:FindFirstChildOfClass("Humanoid") then
-			return model
-		end
-	end
-	return part
 end
 
 local function isCoin(instance)
@@ -158,45 +138,27 @@ local function isCoin(instance)
 		return true
 	end
 	
-	pcall(function()
-		if instance:IsA("Part") or instance:IsA("MeshPart") then
-			if instance.Name == "Part" or instance.Name == "MeshPart" then
-				local parent = instance.Parent
-				if parent then
-					local parentName = parent.Name:lower()
-					if parentName:find("coin") or parentName:find("money") then
-						return true
-					end
-				end
-			end
-		end
-	end)
-	
 	return false
 end
 
 local function scanForCoins()
-	coinsInGame = {}
-	coinsCollected = {}
+	local newCoins = {}
+	local totalCoins = 0
 	
+	-- Varre TODO o workspace buscando moedas
 	for _, obj in pairs(workspace:GetDescendants()) do
 		if isCoin(obj) then
-			local alreadyAdded = false
-			for _, coin in pairs(coinsInGame) do
-				if coin == obj then
-					alreadyAdded = true
-					break
-				end
-			end
-			
-			if not alreadyAdded and (obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("Model")) then
-				table.insert(coinsInGame, obj)
+			if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("Model") then
+				table.insert(newCoins, obj)
+				totalCoins = totalCoins + 1
 			end
 		end
 	end
 	
-	debugLog("✓ Encontradas " .. #coinsInGame .. " moedas no mapa")
-	return #coinsInGame
+	coinsInGame = newCoins
+	
+	debugLog("✓ Encontradas " .. totalCoins .. " moedas no mapa")
+	return totalCoins
 end
 
 local function findNearestCoin()
@@ -204,15 +166,28 @@ local function findNearestCoin()
 	local nearestDistance = math.huge
 	
 	for _, coin in ipairs(coinsInGame) do
-		if coin and coin.Parent and not coinsCollected[coin] then
+		if coin and coin.Parent then
 			pcall(function()
-				local coinPos = coin:IsA("Model") and coin:FindFirstChild("PrimaryPart") and coin.PrimaryPart.Position or coin.Position
-				local playerPos = humanoidRootPart.Position
-				local distance = (coinPos - playerPos).Magnitude
+				local coinPos = nil
 				
-				if distance < nearestDistance and distance < SETTINGS.COIN_DETECTION_RADIUS then
-					nearestDistance = distance
-					nearest = coin
+				if coin:IsA("Model") then
+					if coin:FindFirstChild("PrimaryPart") and coin.PrimaryPart then
+						coinPos = coin.PrimaryPart.Position
+					else
+						coinPos = coin:FindFirstChildOfClass("BasePart").Position
+					end
+				else
+					coinPos = coin.Position
+				end
+				
+				if coinPos then
+					local playerPos = humanoidRootPart.Position
+					local distance = (coinPos - playerPos).Magnitude
+					
+					if distance < nearestDistance then
+						nearestDistance = distance
+						nearest = coin
+					end
 				end
 			end)
 		end
@@ -221,26 +196,42 @@ local function findNearestCoin()
 	return nearest, nearestDistance
 end
 
-local function moveTowards(targetPos)
-	if not character or not humanoidRootPart or not humanoid then return end
+local function getCoinPosition(coin)
+	if coin:IsA("Model") then
+		if coin:FindFirstChild("PrimaryPart") and coin.PrimaryPart then
+			return coin.PrimaryPart.Position
+		else
+			local part = coin:FindFirstChildOfClass("BasePart")
+			if part then
+				return part.Position
+			end
+		end
+	else
+		return coin.Position
+	end
+	return nil
+end
+
+local function moveTowardsCoin(coinPos)
+	if not character or not humanoidRootPart then return end
 	
-	local direction = (targetPos - humanoidRootPart.Position)
+	local direction = (coinPos - humanoidRootPart.Position)
 	local distance = direction.Magnitude
 	
 	if distance > SETTINGS.PICKUP_RANGE then
 		local unitDirection = direction.Unit
+		local newPosition = humanoidRootPart.Position + (unitDirection * SETTINGS.SPEED * 0.016)
 		
-		-- Movimento horizontal mais forte
-		local horizontalVelocity = Vector3.new(unitDirection.X * SETTINGS.SPEED, 0, unitDirection.Z * SETTINGS.SPEED)
-		
-		-- Movimento vertical forte (sobe/desce bem)
-		local verticalVelocity = Vector3.new(0, unitDirection.Y * SETTINGS.VERTICAL_SPEED, 0)
-		
-		-- Velocidade final combinada
-		local finalVelocity = horizontalVelocity + verticalVelocity
-		
-		humanoidRootPart.CFrame = humanoidRootPart.CFrame + (finalVelocity * 0.016)
+		humanoidRootPart.CFrame = CFrame.new(newPosition, newPosition + unitDirection)
 	end
+end
+
+local function applyForceUp()
+	if not humanoidRootPart then return end
+	
+	-- Força infinita para cima (anti-gravidade)
+	local currentVelocity = humanoidRootPart.AssemblyLinearVelocity
+	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(currentVelocity.X, 50, currentVelocity.Z)
 end
 
 local function noclipCharacter()
@@ -256,16 +247,25 @@ end
 local function antiAFKTick()
 	local currentTick = tick()
 	
-	if currentTick - lastAntiAFKTick >= SETTINGS.ANTI_AFK_TICK then
+	if currentTick - lastAntiAFKTick >= 1 then
 		pcall(function()
 			mouse:Move(math.random(100, 1820), math.random(100, 980))
 		end)
 		
 		if humanoid then
-			humanoid:Move(Vector3.new(math.random(-1, 1) * 0.05, 0, math.random(-1, 1) * 0.05))
+			humanoid:Move(Vector3.new(math.random(-1, 1) * 0.02, 0, math.random(-1, 1) * 0.02))
 		end
 		
 		lastAntiAFKTick = currentTick
+	end
+end
+
+local function rescanCoins()
+	local currentTime = tick()
+	
+	if currentTime - lastCoinCheckTime >= 2 then
+		scanForCoins()
+		lastCoinCheckTime = currentTime
 	end
 end
 
@@ -307,51 +307,80 @@ local function startFarmingCoins()
 	debugLog("✓ FARM INICIADO!")
 	
 	scanForCoins()
+	lastCoinCheckTime = tick()
 	
+	-- LOOP PRINCIPAL SEM DELAYS
 	if mainLoop then mainLoop:Disconnect() end
 	mainLoop = RunService.Heartbeat:Connect(function()
 		if not isRunning then return end
 		
 		if not character or not humanoid or not humanoidRootPart then return end
 		
+		-- Noclip
 		if SETTINGS.NOCLIP_ENABLED then
 			noclipCharacter()
 		end
 		
+		-- Anti-gravidade (força infinita para cima)
+		if SETTINGS.ANTI_GRAVITY then
+			applyForceUp()
+		end
+		
+		-- Anti-AFK
 		antiAFKTick()
 		
-		targetCoin, targetDistance = findNearestCoin()
+		-- Rescaneia moedas a cada 2 segundos
+		rescanCoins()
+		
+		-- Encontra moeda mais próxima SEM LIMITE DE RAIO
+		targetCoin = findNearestCoin()
 		
 		if targetCoin then
-			local coinPosition = targetCoin:IsA("Model") and targetCoin:FindFirstChild("PrimaryPart") and targetCoin.PrimaryPart.Position or targetCoin.Position
+			local coinPosition = getCoinPosition(targetCoin)
 			
-			moveTowards(coinPosition)
-			
-			if (coinPosition - humanoidRootPart.Position).Magnitude < SETTINGS.PICKUP_RANGE then
-				coinsCollected[targetCoin] = true
-				debugLog("💰 Moeda coletada!")
+			if coinPosition then
+				-- Move na direção da moeda com velocidade constante
+				moveTowardsCoin(coinPosition)
 				
-				pcall(function()
-					local som = Instance.new("Sound")
-					som.SoundId = "rbxassetid://135669001382610"
-					som.Volume = 0.4
-					som.Parent = humanoidRootPart
-					game:GetService("Debris"):AddItem(som, 1)
-					som:Play()
-				end)
+				-- Verifica coleta
+				local distance = (coinPosition - humanoidRootPart.Position).Magnitude
+				
+				if distance < SETTINGS.PICKUP_RANGE then
+					-- Marca como coletada
+					coinsCollected[targetCoin] = true
+					debugLog("💰 Moeda coletada!")
+					
+					-- Som
+					pcall(function()
+						local som = Instance.new("Sound")
+						som.SoundId = "rbxassetid://135669001382610"
+						som.Volume = 0.4
+						som.Parent = humanoidRootPart
+						game:GetService("Debris"):AddItem(som, 1)
+						som:Play()
+					end)
+				end
 			end
 		else
-			-- Continua procurando sem subir
-			debugLog("🔍 Procurando mais moedas...")
-			wait(0.5)
-			scanForCoins()
+			-- Não faz nada, continua esperando encontrar moedas
+			-- Apenas anti-AFK mantém ativo
 		end
 	end)
 	
+	-- LOOP DE NOCLIP CONTÍNUO
 	if noclipLoop then noclipLoop:Disconnect() end
 	noclipLoop = RunService.Heartbeat:Connect(function()
 		if not isRunning or not character then return end
 		noclipCharacter()
+	end)
+	
+	-- LOOP DE GRAVIDADE CONTÍNUO
+	if gravityLoop then gravityLoop:Disconnect() end
+	gravityLoop = RunService.Heartbeat:Connect(function()
+		if not isRunning or not humanoidRootPart then return end
+		if SETTINGS.ANTI_GRAVITY then
+			applyForceUp()
+		end
 	end)
 end
 
@@ -376,16 +405,18 @@ local function stopFarmingCoins()
 		noclipLoop = nil
 	end
 	
+	if gravityLoop then
+		gravityLoop:Disconnect()
+		gravityLoop = nil
+	end
+	
+	-- Reativa colisão
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.CanCollide = true
 			end
 		end
-	end
-	
-	if humanoid then
-		humanoid:Move(Vector3.new(0, 0, 0))
 	end
 	
 	debugLog("✗ FARM PARADO")
@@ -435,9 +466,10 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════
 
 debugLog("════════════════════════════════════════")
-debugLog("✓ MM2 Auto Farm v3.5 Carregado!")
+debugLog("✓ MM2 Auto Farm v4.0 Carregado!")
 debugLog("✓ Clique no botão para ativar/desativar")
 debugLog("✓ Pressione X para minimizar a GUI")
-debugLog("✓ Velocidade: 40 studs/s")
-debugLog("✓ Força de subida: 35")
+debugLog("✓ Velocidade: 40 studs/s CONSTANTE")
+debugLog("✓ Força infinita (SEM QUEDA)")
+debugLog("✓ Sem limite de raio")
 debugLog("════════════════════════════════════════")
