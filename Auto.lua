@@ -18,7 +18,7 @@ local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 -- ═══════════════════════════════════════════════════════════════════════
--- CONFIGURAÇÕES GLOBAIS
+-- CONFIGURAÇÕES GlOBAIS
 -- ═══════════════════════════════════════════════════════════════════════
 
 local SETTINGS = {
