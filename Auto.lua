@@ -125,7 +125,7 @@ end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
-    if input.KeyCode == Enum.KeyCode.X then
+    if input.KeyCode == Enum.KeyCode.z then
         AutoFarmActive = not AutoFarmActive
         print("[MM2 Auto Farm] Status:", AutoFarmActive and "ATIVADO" or "DESATIVADO")
         
