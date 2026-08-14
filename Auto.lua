@@ -22,7 +22,7 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 -- ═══════════════════════════════════════════════════════════════════════
 
 local SETTINGS = {
-	SPEED = 21,
+	SPEED = 40,
 	TELEPORT_HEIGHT = 50,
 	ANTI_AFK_TICK = 1,
 	COIN_DETECTION_RADIUS = 500,
