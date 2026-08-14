@@ -1,5 +1,5 @@
 -- ╔═══════════════════════════════════════════════════════════════════════╗
--- ║        MURDER MYSTERY 2 - AUTO FARM COINS COMPLETO v3.0              ║
+-- ║        MURDER MYSTERY 2 - AUTO FARM COINS COMPLETO v3.5              ║
 -- ║                  Desenvolvido por Gomes.wqq                          ║
 -- ║              100% Funcional - Sem Posições Fixas                     ║
 -- ╚═══════════════════════════════════════════════════════════════════════╝
@@ -18,12 +18,12 @@ local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 -- ═══════════════════════════════════════════════════════════════════════
--- CONFIGURAÇÕES GlOBAIS
+-- CONFIGURAÇÕES GLOBAIS
 -- ═══════════════════════════════════════════════════════════════════════
 
 local SETTINGS = {
 	SPEED = 40,
-	TELEPORT_HEIGHT = 50,
+	VERTICAL_SPEED = 35,
 	ANTI_AFK_TICK = 1,
 	COIN_DETECTION_RADIUS = 500,
 	PICKUP_RANGE = 4,
@@ -45,7 +45,7 @@ local antiAfkLoop = nil
 local noclipLoop = nil
 
 -- ═══════════════════════════════════════════════════════════════════════
--- CRIAR GUI COMPACTA (100x100)
+-- CRIAR GUI MINI (70x70)
 -- ═══════════════════════════════════════════════════════════════════════
 
 local screenGui = Instance.new("ScreenGui")
@@ -55,10 +55,10 @@ screenGui.DisplayOrder = 1000
 screenGui.Enabled = true
 screenGui.Parent = playerGui
 
--- Container Principal (Pequeno)
+-- Container Principal (Bem pequeno)
 local containerFrame = Instance.new("Frame")
 containerFrame.Name = "Container"
-containerFrame.Size = UDim2.new(0, 100, 0, 100)
+containerFrame.Size = UDim2.new(0, 70, 0, 70)
 containerFrame.Position = UDim2.new(0.02, 0, 0.02, 0)
 containerFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 containerFrame.BorderSizePixel = 0
@@ -76,25 +76,25 @@ strokeBorder.Thickness = 2
 strokeBorder.Parent = containerFrame
 
 -- ═══════════════════════════════════════════════════════════════════════
--- BOTÃO ON/OFF (No centro da GUI)
+-- BOTÃO INTERRUPTOR MINI (No centro da GUI)
 -- ═══════════════════════════════════════════════════════════════════════
 
 local statusButton = Instance.new("TextButton")
 statusButton.Name = "StatusButton"
-statusButton.Size = UDim2.new(0, 90, 0, 90)
-statusButton.Position = UDim2.new(0.5, -45, 0.5, -45)
+statusButton.Size = UDim2.new(0, 60, 0, 60)
+statusButton.Position = UDim2.new(0.5, -30, 0.5, -30)
 statusButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 statusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 statusButton.TextScaled = true
-statusButton.TextSize = 16
+statusButton.TextSize = 14
 statusButton.Font = Enum.Font.GothamBold
-statusButton.Text = "OFF"
+statusButton.Text = "●"
 statusButton.BorderSizePixel = 0
 statusButton.ClipsDescendants = true
 statusButton.Parent = containerFrame
 
 local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 10)
+buttonCorner.CornerRadius = UDim.new(0, 8)
 buttonCorner.Parent = statusButton
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -141,7 +141,6 @@ local function debugLog(text)
 end
 
 local function getCoinModel(part)
-	-- Tenta encontrar a moeda (pode ser um modelo pai)
 	if part:FindFirstAncestorOfClass("Model") then
 		local model = part:FindFirstAncestorOfClass("Model")
 		if not model:FindFirstChildOfClass("Humanoid") then
@@ -154,17 +153,14 @@ end
 local function isCoin(instance)
 	if not instance or not instance.Parent then return false end
 	
-	-- Verifica o nome da instância
 	local name = instance.Name:lower()
 	if name:find("coin") or name:find("money") or name:find("cash") or name:find("dollar") then
 		return true
 	end
 	
-	-- Verifica descrição se houver
 	pcall(function()
 		if instance:IsA("Part") or instance:IsA("MeshPart") then
 			if instance.Name == "Part" or instance.Name == "MeshPart" then
-				-- Pode ser uma moeda se estiver em um modelo com nome de moeda
 				local parent = instance.Parent
 				if parent then
 					local parentName = parent.Name:lower()
@@ -183,10 +179,8 @@ local function scanForCoins()
 	coinsInGame = {}
 	coinsCollected = {}
 	
-	-- Varre TUDO no workspace
 	for _, obj in pairs(workspace:GetDescendants()) do
 		if isCoin(obj) then
-			-- Evita duplicatas
 			local alreadyAdded = false
 			for _, coin in pairs(coinsInGame) do
 				if coin == obj then
@@ -195,7 +189,7 @@ local function scanForCoins()
 				end
 			end
 			
-			if not alreadyAdded and obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("Model") then
+			if not alreadyAdded and (obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("Model")) then
 				table.insert(coinsInGame, obj)
 			end
 		end
@@ -235,7 +229,17 @@ local function moveTowards(targetPos)
 	
 	if distance > SETTINGS.PICKUP_RANGE then
 		local unitDirection = direction.Unit
-		humanoidRootPart.CFrame = humanoidRootPart.CFrame + (unitDirection * SETTINGS.SPEED * 0.016)
+		
+		-- Movimento horizontal mais forte
+		local horizontalVelocity = Vector3.new(unitDirection.X * SETTINGS.SPEED, 0, unitDirection.Z * SETTINGS.SPEED)
+		
+		-- Movimento vertical forte (sobe/desce bem)
+		local verticalVelocity = Vector3.new(0, unitDirection.Y * SETTINGS.VERTICAL_SPEED, 0)
+		
+		-- Velocidade final combinada
+		local finalVelocity = horizontalVelocity + verticalVelocity
+		
+		humanoidRootPart.CFrame = humanoidRootPart.CFrame + (finalVelocity * 0.016)
 	end
 end
 
@@ -253,25 +257,16 @@ local function antiAFKTick()
 	local currentTick = tick()
 	
 	if currentTick - lastAntiAFKTick >= SETTINGS.ANTI_AFK_TICK then
-		-- Move mouse
 		pcall(function()
 			mouse:Move(math.random(100, 1820), math.random(100, 980))
 		end)
 		
-		-- Movimento leve
 		if humanoid then
 			humanoid:Move(Vector3.new(math.random(-1, 1) * 0.05, 0, math.random(-1, 1) * 0.05))
 		end
 		
 		lastAntiAFKTick = currentTick
 	end
-end
-
-local function teleportUp()
-	if not humanoidRootPart then return end
-	
-	humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, SETTINGS.TELEPORT_HEIGHT, 0)
-	wait(1)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -282,11 +277,11 @@ local function toggleGuiSize()
 	isGuiMinimized = not isGuiMinimized
 	
 	if isGuiMinimized then
-		containerFrame:TweenSize(UDim2.new(0, 50, 0, 50), "Out", "Quad", 0.2, true)
+		containerFrame:TweenSize(UDim2.new(0, 35, 0, 35), "Out", "Quad", 0.2, true)
 		statusButton.Visible = false
 	else
 		statusButton.Visible = true
-		containerFrame:TweenSize(UDim2.new(0, 100, 0, 100), "Out", "Quad", 0.2, true)
+		containerFrame:TweenSize(UDim2.new(0, 70, 0, 70), "Out", "Quad", 0.2, true)
 	end
 end
 
@@ -306,64 +301,53 @@ local function startFarmingCoins()
 	if isRunning then return end
 	
 	isRunning = true
-	statusButton.Text = "ON"
-	statusButton.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
+	statusButton.Text = "●"
+	statusButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
 	
 	debugLog("✓ FARM INICIADO!")
 	
-	-- Escaneia moedas inicialmente
 	scanForCoins()
 	
-	-- Loop principal de coleta
 	if mainLoop then mainLoop:Disconnect() end
 	mainLoop = RunService.Heartbeat:Connect(function()
 		if not isRunning then return end
 		
 		if not character or not humanoid or not humanoidRootPart then return end
 		
-		-- Noclip
 		if SETTINGS.NOCLIP_ENABLED then
 			noclipCharacter()
 		end
 		
-		-- Anti AFK
 		antiAFKTick()
 		
-		-- Encontra moeda mais próxima
 		targetCoin, targetDistance = findNearestCoin()
 		
 		if targetCoin then
-			-- Pega posição da moeda
 			local coinPosition = targetCoin:IsA("Model") and targetCoin:FindFirstChild("PrimaryPart") and targetCoin.PrimaryPart.Position or targetCoin.Position
 			
-			-- Move na direção da moeda
 			moveTowards(coinPosition)
 			
-			-- Verifica se coletou
 			if (coinPosition - humanoidRootPart.Position).Magnitude < SETTINGS.PICKUP_RANGE then
 				coinsCollected[targetCoin] = true
 				debugLog("💰 Moeda coletada!")
 				
-				-- Som
 				pcall(function()
 					local som = Instance.new("Sound")
-					som.SoundId = "rbxassetid://12222058"
-					som.Volume = 0.2
+					som.SoundId = "rbxassetid://135669001382610"
+					som.Volume = 0.4
 					som.Parent = humanoidRootPart
-					game:GetService("Debris"):AddItem(som, 0.5)
+					game:GetService("Debris"):AddItem(som, 1)
 					som:Play()
 				end)
 			end
 		else
-			-- Sem moedas, teleporta e recarrega
-			debugLog("🎯 Ciclo completo! Teletransportando...")
-			teleportUp()
-			wait(1)
+			-- Continua procurando sem subir
+			debugLog("🔍 Procurando mais moedas...")
+			wait(0.5)
 			scanForCoins()
 		end
 	end)
 	
-	-- Loop de noclip constante
 	if noclipLoop then noclipLoop:Disconnect() end
 	noclipLoop = RunService.Heartbeat:Connect(function()
 		if not isRunning or not character then return end
@@ -379,7 +363,7 @@ local function stopFarmingCoins()
 	if not isRunning then return end
 	
 	isRunning = false
-	statusButton.Text = "OFF"
+	statusButton.Text = "●"
 	statusButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 	
 	if mainLoop then
@@ -392,7 +376,6 @@ local function stopFarmingCoins()
 		noclipLoop = nil
 	end
 	
-	-- Reativa colisão
 	if character then
 		for _, part in pairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then
@@ -452,7 +435,9 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════
 
 debugLog("════════════════════════════════════════")
-debugLog("✓ MM2 Auto Farm v3.0 Carregado!")
+debugLog("✓ MM2 Auto Farm v3.5 Carregado!")
 debugLog("✓ Clique no botão para ativar/desativar")
 debugLog("✓ Pressione X para minimizar a GUI")
+debugLog("✓ Velocidade: 40 studs/s")
+debugLog("✓ Força de subida: 35")
 debugLog("════════════════════════════════════════")
