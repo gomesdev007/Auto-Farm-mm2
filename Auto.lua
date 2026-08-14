@@ -1,24 +1,23 @@
--- [[ MM2 AUTO FARM + ANTI-AFK WITH CUSTOM DARK GUI ]] --
+-- [[ MM2 AUTO FARM COINS - PERFECT SPEED 21 & DARK GUI ]] --
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local SPEED = 21 -- Velocidade fixa (21 studs/s)
+local SPEED = 21 -- Velocidade cravada em 21 studs/s (evita kick)
 local FarmEnabled = false
 
 ---------------------------------------------------------
--- 1. CRIAÇÃO DA GUI FLUTUANTE (DARK PURPLE & RED)
+-- 1. INTERFACE GRÁFICA (GUI DARK COMPACTA E ARRASTÁVEL)
 ---------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2_Farm_Gui"
+ScreenGui.Name = "MM2_Farm_Hub"
 ScreenGui.ResetOnSpawn = false
 
--- Suporte para Executors (CoreGui) ou PlayerGui caso falhar
+-- Suporte de exibição segura para Executors
 if syn and syn.protect_gui then
     syn.protect_gui(ScreenGui)
     ScreenGui.Parent = CoreGui
@@ -31,9 +30,9 @@ end
 -- Janela Principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 220, 0, 130)
-MainFrame.Position = UDim2.new(0.5, -110, 0.4, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 22) -- Deep Black/Purple
+MainFrame.Size = UDim2.new(0, 210, 0, 120)
+MainFrame.Position = UDim2.new(0.5, -105, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 10, 18) -- Deep Dark
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true -- Arrastável
@@ -45,7 +44,7 @@ MainCorner.Parent = MainFrame
 
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Thickness = 1.5
-MainStroke.Color = Color3.fromRGB(130, 0, 30) -- Bordas Vermelhas Accent
+MainStroke.Color = Color3.fromRGB(140, 0, 35) -- Borda Vermelha
 MainStroke.Parent = MainFrame
 
 -- Título
@@ -54,19 +53,19 @@ Title.Name = "Title"
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
 Title.Text = "MM2 AUTO FARM"
-Title.TextColor3 = Color3.fromRGB(200, 150, 255) -- Purple Accent
-Title.TextSize = 14
+Title.TextColor3 = Color3.fromRGB(180, 140, 240)
+Title.TextSize = 13
 Title.Font = Enum.Font.GothamBold
 Title.Parent = MainFrame
 
--- Botão ON / OFF no Centro
+-- Botão On/Off Centralizado
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "ToggleBtn"
-ToggleBtn.Size = UDim2.new(0, 160, 0, 45)
-ToggleBtn.Position = UDim2.new(0.5, -80, 0.55, -22)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 20, 40) -- Desativado
+ToggleBtn.Size = UDim2.new(0, 150, 0, 42)
+ToggleBtn.Position = UDim2.new(0.5, -75, 0.55, -21)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 15, 30)
 ToggleBtn.Text = "FARM: OFF"
-ToggleBtn.TextColor3 = Color3.fromRGB(200, 80, 80)
+ToggleBtn.TextColor3 = Color3.fromRGB(220, 70, 70)
 ToggleBtn.TextSize = 13
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.AutoButtonColor = false
@@ -78,11 +77,11 @@ BtnCorner.Parent = ToggleBtn
 
 local BtnStroke = Instance.new("UIStroke")
 BtnStroke.Thickness = 1
-BtnStroke.Color = Color3.fromRGB(200, 0, 50)
+BtnStroke.Color = Color3.fromRGB(180, 0, 40)
 BtnStroke.Parent = ToggleBtn
 
 ---------------------------------------------------------
--- 2. LÓGICA DE MOVIMENTO E COLETA
+-- 2. BUSCA DE MOEDAS E NAVEGAÇÃO (TWEEN SPEED 21)
 ---------------------------------------------------------
 local function tweenTo(targetCFrame)
     local character = LocalPlayer.Character
@@ -96,7 +95,6 @@ local function tweenTo(targetCFrame)
     local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
     tween:Play()
     
-    -- Interrompe o tween caso desative a função no meio do caminho
     while tween.PlaybackState == Enum.PlaybackState.Playing do
         if not FarmEnabled then
             tween:Cancel()
@@ -121,21 +119,20 @@ local function getCoins()
 end
 
 ---------------------------------------------------------
--- 3. LOOP DE ANTI-AFK REFORÇADO (DENTRO DA FUNÇÃO)
+-- 3. ANTI-AFK & MICRO-MOVIMENTO (A CADA 1 SEGUNDO)
 ---------------------------------------------------------
 task.spawn(function()
     while true do
         task.wait(1)
         if FarmEnabled then
-            -- Anti-AFK Roblox padrão
+            -- Clique virtual na tela
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new(0, 0))
             
-            -- Clique na tela + micro-movimento manual para não travar PC/client
+            -- Micro-movimento no personagem para evitar travamento de render do PC/client
             local character = LocalPlayer.Character
             if character and character:FindFirstChild("Humanoid") then
                 local hum = character.Humanoid
-                -- Força micro passos se o boneco estiver parado
                 if hum.MoveDirection.Magnitude == 0 then
                     hum:Move(Vector3.new(0.01, 0, 0.01), false)
                 end
@@ -145,7 +142,7 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------
--- 4. LOOP PRINCIPAL DO AUTO FARM
+-- 4. LOOP PRINCIPAL DE COLETA
 ---------------------------------------------------------
 task.spawn(function()
     while true do
@@ -164,7 +161,7 @@ task.spawn(function()
                         end
                     end
                 else
-                    -- Sem moedas: Sobe 50 studs e aguarda
+                    -- Quando acabam as moedas: Teleporta 50 studs para cima
                     local hrp = character.HumanoidRootPart
                     hrp.CFrame = hrp.CFrame + Vector3.new(0, 50, 0)
                     task.wait(3)
@@ -175,20 +172,20 @@ task.spawn(function()
 end)
 
 ---------------------------------------------------------
--- 5. EVENTO DE TOGGLE DO BOTÃO
+-- 5. CONTROLE DO BOTÃO ON/OFF
 ---------------------------------------------------------
 ToggleBtn.MouseButton1Click:Connect(function()
     FarmEnabled = not FarmEnabled
     
     if FarmEnabled then
         ToggleBtn.Text = "FARM: ON"
-        ToggleBtn.TextColor3 = Color3.fromRGB(120, 255, 120)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 60, 35)
-        BtnStroke.Color = Color3.fromRGB(0, 200, 100)
+        ToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 130)
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(15, 50, 25)
+        BtnStroke.Color = Color3.fromRGB(0, 180, 80)
     else
         ToggleBtn.Text = "FARM: OFF"
-        ToggleBtn.TextColor3 = Color3.fromRGB(200, 80, 80)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 20, 40)
-        BtnStroke.Color = Color3.fromRGB(200, 0, 50)
+        ToggleBtn.TextColor3 = Color3.fromRGB(220, 70, 70)
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 15, 30)
+        BtnStroke.Color = Color3.fromRGB(180, 0, 40)
     end
 end)
