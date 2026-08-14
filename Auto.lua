@@ -1,7 +1,7 @@
 -- ╔═══════════════════════════════════════════════════════════════════════╗
 -- ║        MURDER MYSTERY 2 - AUTO FARM COINS COMPLETO v4.0              ║
 -- ║                  Desenvolvido por Gomes.wqq                          ║
--- ║              SEM BUGS - FORÇA INFINITA - FUNCIONAL 100%              ║
+-- ║              SEN BUGS - FORÇA INFINITA - FUNCIONAL 100%              ║
 -- ╚═══════════════════════════════════════════════════════════════════════╝
 
 local Players = game:GetService("Players")
